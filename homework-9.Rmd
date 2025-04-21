@@ -1,0 +1,191 @@
+---
+title: "SDS Homework 9"
+author: "Daphne Huynh"
+date: "2025-04-19"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.height=4, fig.width=7.5, fig.align = "center", warning=FALSE, tidy=TRUE, tidy.opts=list(width.cutoff=60), message=FALSE, echo = FALSE)
+```
+
+#### \href{https://github.com/giahandhuynh/315homework9}{\textcolor{blue}{GitHub Repository}}
+
+```{r}
+#libraries needed
+
+library(ggplot2)
+library(mosaic)
+library(kableExtra)
+library(tidyverse)
+library(effectsize)
+```
+
+
+# 1.
+
+```{r}
+#read in data
+solder <- read.csv("solder.csv")
+```
+
+## A.
+
+```{r}
+#plotting the relationship between skips by opening
+ggplot(solder) + geom_jitter(aes(x = Opening, y = skips), col = 'plum4') + stat_summary(aes(x = Opening, y = skips), fun = 'mean', color = 'black')
+```
+
+#### The plot above shows the amount of skips based on the size of the opening, being small, medium, or large. By visual assessment, it's clear that as the opening gets smaller, the number of skips increases. But this is further proven by each category's center. The mean for large is 1.53 skips, while the maximum is 17.0, for medium these numbers are 3.57 and 24.0, and finally small's mean is 11.49 and it's maximum is 48.0. There is a definite relationship between these two variables.
+
+```{r}
+#plotting thickness
+ggplot(solder) + geom_jitter(aes(x = Solder, y = skips), col = 'plum4') + stat_summary(aes(x = Solder, y = skips), fun = 'mean', color = 'black')
+```
+
+#### This set of boxplots shows the number of skips depending on the thickness of the alloy used for soldering. Again, there is a visual indication of a higher number of skips for thin alloys. Using the data, thicker alloys have a mean of 2.90 and a maximum of 30, while thin alloys have a mean of 8.16 and a maximum of 48. Although the differences are not as drastic as opening size, there is still a relationship between alloy thickness and the number of skips observed.
+
+```{r results = 'hide'}
+#getting values to describe plots
+fivenum(skips~Opening, data = solder)
+mean(skips~Opening, data = solder)
+fivenum(skips~Solder, data = solder)
+mean(skips~Solder, data = solder)
+```
+
+
+
+## B.
+
+```{r results = 'hide'}
+#creating regression model and getting confidence interval
+solderLM = lm(skips~Opening + Solder + Opening:Solder, data = solder)
+coef(solderLM)
+confint(solderLM, level = 0.95)
+
+#make a data set of the needed numbers
+solderLMdf <- data.frame(
+  coef = c("Intercept", "OpeningM", "OpeningS", "SolderThin", "OpeningM:SolderThin", "OpeningS:SolderThin"),
+  estimate = c(0.39, 2.41, 5.13, 2.28, -0.74, 9.65),
+  lowerBound = c(-0.63, 0.96, 3.68, 0.84, -2.78, 7.61),
+  upperBound = c(1.41, 3.85, 6.57, 3.72, 1.30, 11.70)
+)
+
+#create a kable of the data set
+solderKable = kable(solderLMdf, col.names = c("Term", "Estimate", "Lower Bound", "Upper Bound"))
+```
+
+```{r}
+#output a nicely formatted table of the coefficients and their confidence intervals
+kable_styling(solderKable, bootstrap_options = "striped")
+```
+
+\newpage
+
+## C.
+
+#### The baseline number of skips when the opening is large and the alloy is thick, is 0.39 skips.
+#### The main effect for the opening being medium is an additional 2.41 skips. This is the effect of a medium opening in isolation.
+#### The main effect for the opening being small is an aditional 5.13 skips. This is the effect of a small opening in isolation.
+#### The main effect for the alloy used being thin is an additional 2.28 skips. This is the effect of a thin alloy in isolation.
+#### The interaction effect for the opening being medium and the alloy being thin is -0.74. Or the number of skips for a solder gun with a medium opening AND a thin alloy is reduced by 0.74.
+#### The interaction effect for the opening being small and the alloy being thin is 9.65. Or the number of skips for a solder gun with a small opening AND a thin alloy is increased by 9.65.
+
+## D.
+
+#### If I had to recommend a combination of opening size and solder alloy thickness to AT&T in order to minimize the number of skips based off this analysis, it would be a large opening and thick alloy. Despite the interaction of a medium opening and thin solder appearing to be better, when calculating the true effect by adding isolated effects, it results in a higher number of skips. In fact, every other combination results in a higher number of skips. Therefore, a large opening and a thick solder is the ideal combination.
+
+\newpage
+
+# 2.
+```{r}
+#read in data
+groceries <- read.csv("groceries.csv")
+```
+
+## A.
+
+```{r}
+#data wrangling to get average price of all products per store
+pricebystore <- groceries %>%
+  select(Store, Price) %>%
+  group_by(Store) %>%
+  summarize(avgprice = mean(Price))
+
+#plot the summary
+ggplot(pricebystore) + geom_col(aes(x = avgprice, y = Store), fill = 'plum4', col = 'black')
+```
+
+#### The plot above shows the average price across all products based on the different grocery stores within this data set. The mean among all the average prices is $3.16. The store with the highest average is Whole Foods with $3.99, closely followed by Wheatsville Food Co-Op at $3.94. The store with the lowest average is Fiesta, being $2.05, and second lowest is $2.34 from Walmart. 
+
+## B.
+
+```{r}
+#data wrangling to get the amount of stores a product is sold by
+productbystore <- groceries %>%
+  group_by(Product) %>%
+  summarize(storessell = n())
+
+#plotting the summary
+ggplot(productbystore) + geom_col(aes(x = storessell, y = Product), fill = 'plum4', col = 'black')
+```
+
+#### The graph pictured above is showing the frequency of a certain product across all the stores in this data set, the higher the value the more stores that sell that product. The most frequent items are cartons of eggs and Horizon 2% Milk Cartons, both at 16 stores selling them. On the other hand, the least frequent items are Cinnamon Toast Crunch, El Milagros Tortilla Chips, Frosted Flakes, and Lucky Charms being sold at 4 different stores.
+
+## C.
+
+```{r results = 'hide'}
+#running regression of the effect of product and type on price, as well as confidence interval
+typeLM = lm(Price~Product + Type, data = groceries)
+coef(typeLM)
+confint(typeLM, level = 0.95)
+```
+
+#### Compared with ordinary grocery stores (like Albertsons, HEB, or Krogers), convenience stores charge somewhere between $0.41 and $0.92 dollars more for the same product.
+
+## D.
+
+```{r results = 'hide'}
+#run regression of the effect of product and store on price
+prodstoreLM = lm(Price~Product + Store, data = groceries)
+coef(prodstoreLM)
+```
+
+#### The two stores that seem to charge the lowest prices when comparing the same product are Kroger Fresh Fare and Walmart. On the other hand, the two stores that seem to charge the highest prices when comparing the same product are Whole Foods and Wheatsville Food Co-Op.
+
+## E.
+
+#### The difference between Central Market prices and H-E-B prices for the same product is estimated to be around $0.08 when H-E-B is subtracted from Central Market. Therefore, Central Market does upcharge their prices for the same products. But to put this difference in a larger context, we can compare it to other stores with similar offshoots, which results in larger differences. For example, Kroger vs. the the small format Kroger Fresh Flare has a $0.20 difference. The variation between the natural grocers, Wheatsville Food Co-Op and Natural Grocers is a much larger $0.37. Although the difference between Central Market and H-E-B is much smaller than these, the gap still exists, showing how the variations in prices between offshoot locations/brands is present.
+
+## F.
+
+```{r results = 'hide'}
+#data wrangling to make new variable of income in ten thousands
+groceries <- groceries %>%
+  mutate(Income10K = Income / 10000)
+
+#run regression of the effect of income and product on price
+incomeLM = lm(Price~Income10K + Product, data = groceries)
+coef(incomeLM)
+
+#getting standardized coefficients
+standardize_parameters(incomeLM)
+```
+
+#### Since the sign of the Income10K coefficient is negative, it implies that those in poorer ZIP codes tend to pay more for the same product on average. This is known because it means as the income variable increases and increases, the price of each product is decreasing. Therefore, the low income areas are paying the highest prices for the same products.
+
+#### A one-standard deviation increase in the income of a ZIP code seems to be associated with a -0.03 standard-deviation change in the price that consumers in that ZIP code expect to pay for the same product
+
+\newpage
+
+# 3.
+
+#### A. True, based on the linear regression model in Figure A1 shows a positive trend as percentage of minority residents increases, the number of FAIR policies per 100 housing units is also increasing. This regression line is not perfect, not every single data point follows this pattern, however the r squared value is 0.52, showing that at least 50% of the variation in FAIR policy distribution is explained by the proportion of minority residents.
+
+#### B. False, there is no evidence of an interaction between minority and percentage of older houses in the way that these two variables effect the number of FAIR policies. The only figure with these two variables isolated is B1, however the FAIR policies variable was not included whatsoever, not giving any insight to how these two variables alone can predict such. We would have to see some variation in FAIR policies based on one variable, and dependent on the status of the last variable. But this type of analysis is not possible. Therefore the evidence does not suggest an interaction between minority and percentage of houses built before WWII.
+
+#### C. False, the number of FAIR policies per 100 housing units based on minority percentage in high-fire-risk ZIP codes isn't necessarily stronger than in low-fire-risk ZIP codes. When looking at the graphs just visually, it seems that the slope of the high risk line is slightly steeper. However, looking at the regression model's numbers, the interaction effect is the determining factor in changing the slope when assessing high vs. low risk areas. The confidence interval of this effect is practically centered over 0, going from -0.012 to 0.01, in this case, the low risk slope in reality could be greater than high risk areas. Therefore, it cannot be said that high-fire-risk areas have a stronger relationship between minority percentage and FAIR policy uptake. Instead, there is no statistically significant difference in the association between the two main variables in the two difference fire risk groups.
+
+#### D. False, for a variable to "explain away" another, it has to weaken the association between that initial predictor variable and the outcome of interest, explaining away ALL of the association would imply disproving any type of relationship is present. In the regressions presented in Figure D1 and D2, is it seen that the strength of the minority effect does get weaker when the income variable is introduced, however there is still an association present. Instead, one could get the standard coefficients or look at R squared to find how much effect is attributed to each variable. But, the income variable does not entirely explain away the minority variable on FAIR policy uptake, rather it "explains away" a porition of this association.
+
+#### E. True, even after controlling for income, fire risk, and housing age, minority and FAIR policy uptake are still associated. In Figure E, the coefficients for each variable are given estimates and confidence intervals. When looking at the minority effect, the estimated value is 0.008, although weak it is still there. Not only that, but the confidence interval is (0.003, 0.014) showing statistically significant evidence of an association since zero is not included in this interval. Therefore, controlling for all other relevant variables does not discount the effect of minority percentage on FAIR policy per 100 housing units.
